@@ -33,6 +33,7 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
+from LBC_module import LBC
 
 _BATCH_NORM_DECAY = 0.997
 _BATCH_NORM_EPSILON = 1e-5
@@ -118,14 +119,48 @@ def building_block(inputs, filters, is_training, projection_shortcut, strides,
   if projection_shortcut is not None:
     shortcut = projection_shortcut(inputs)
 
-  inputs = conv2d_fixed_padding(
-      inputs=inputs, filters=filters, kernel_size=3, strides=strides,
-      data_format=data_format)
+  # jianhao2 changed the following part. ++++++++++++++++++++++++++++++++++++++++++++++
+  # inputs = conv2d_fixed_padding(
+  #     inputs=inputs, filters=filters, kernel_size=3, strides=strides,
+  #     data_format=data_format)
+  
+  # input_channels is the 'channels' in 'inputs' 
+  # if input in the format -> [batch, channels, height_in, width_in] 
+  if data_format == 'channels_first':
+    input_channels = tf.shape(inputs)[1]
+  else:
+    input_channels = tf.shape(inputs)[3]
+
+  kernel_size = 3
+  # same padding from conv2d_fixed_padding()
+  if strides > 1:
+    inputs = fixed_padding(inputs, kernel_size, data_format)
+
+  # replace the convolution layer with LBC function.
+  inputs = LBC(x = inputs, number_of_b = 512,
+          sparsity = 0.5, filter_height = kernel_size,
+          filter_width = kernel_size, input_channels = input_channels,
+          output_channels = filters)
 
   inputs = batch_norm_relu(inputs, is_training, data_format)
-  inputs = conv2d_fixed_padding(
-      inputs=inputs, filters=filters, kernel_size=3, strides=1,
-      data_format=data_format)
+  # inputs = conv2d_fixed_padding(
+  #     inputs=inputs, filters=filters, kernel_size=3, strides=1,
+  #     data_format=data_format)
+
+  # input_channels is the 'channels' in 'inputs' 
+  # if input in the format -> [batch, channels, height_in, width_in] 
+  if data_format == 'channels_first':
+    input_channels = tf.shape(inputs)[1]
+  else:
+    input_channels = tf.shape(inputs)[3]
+  if strides > 1:
+    inputs = fixed_padding(inputs, kernel_size, data_format)
+
+  # replace the convolution layer with LBC function.
+  inputs = LBC(x = inputs, number_of_b = 512,
+          sparsity = 0.5, filter_height = kernel_size,
+          filter_width = kernel_size, input_channels = input_channels,
+          output_channels = filters)
 
   return inputs + shortcut
 
