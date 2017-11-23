@@ -34,6 +34,7 @@ from __future__ import print_function
 
 import tensorflow as tf
 from LBC_module import LBC
+import numpy as np
 
 _BATCH_NORM_DECAY = 0.997
 _BATCH_NORM_EPSILON = 1e-5
@@ -91,6 +92,43 @@ def conv2d_fixed_padding(inputs, filters, kernel_size, strides, data_format):
       kernel_initializer=tf.variance_scaling_initializer(),
       data_format=data_format)
 
+def LBC_fixed_padding(inputs, filters, kernel_size, strides, data_format,
+        number_of_b = 512, sparsity = 0.5, shared_weights = 'Fasle'):
+  """
+  Local Binary Convolution replacement.
+  """
+  # input_channels is the 'channels' in 'inputs' 
+  # if input in the format -> [batch, channels, height_in, width_in] 
+  input_shape = inputs.get_shape().as_list()
+  # print(input_shape)
+  if data_format == 'channels_first':
+    input_channels = input_shape[1]
+  else:
+    input_channels = input_shape[3]
+
+  # same padding from conv2d_fixed_padding()
+  if strides > 1:
+    inputs = fixed_padding(inputs, kernel_size, data_format)
+    
+  if strides == 1:
+    padding = 'SAME'
+  else:
+    padding = 'VALID'
+  
+  # print(kernel_size)
+  # print(filters)
+  # print(input_channels)
+  # ancher_shape = np.array([kernel_size, kernel_size,
+  #                           input_channels, filters])
+  # print(ancher_shape)
+ 
+  # replace the convolution layer with LBC function.
+  inputs = LBC(x = inputs, number_of_b = number_of_b,
+          sparsity = sparsity, filter_height = kernel_size,
+          filter_width = kernel_size, input_channels = input_channels,
+          output_channels = filters, strides = strides,
+          padding = padding, shared_weights = shared_weights)
+  return inputs
 
 def building_block(inputs, filters, is_training, projection_shortcut, strides,
                    data_format):
@@ -123,44 +161,18 @@ def building_block(inputs, filters, is_training, projection_shortcut, strides,
   # inputs = conv2d_fixed_padding(
   #     inputs=inputs, filters=filters, kernel_size=3, strides=strides,
   #     data_format=data_format)
+
+  inputs = LBC_fixed_padding(inputs = inputs, filters = filters,
+          kernel_size = 3, strides = strides, data_format = data_format)
   
-  # input_channels is the 'channels' in 'inputs' 
-  # if input in the format -> [batch, channels, height_in, width_in] 
-  if data_format == 'channels_first':
-    input_channels = tf.shape(inputs)[1]
-  else:
-    input_channels = tf.shape(inputs)[3]
-
-  kernel_size = 3
-  # same padding from conv2d_fixed_padding()
-  if strides > 1:
-    inputs = fixed_padding(inputs, kernel_size, data_format)
-
-  # replace the convolution layer with LBC function.
-  inputs = LBC(x = inputs, number_of_b = 512,
-          sparsity = 0.5, filter_height = kernel_size,
-          filter_width = kernel_size, input_channels = input_channels,
-          output_channels = filters)
 
   inputs = batch_norm_relu(inputs, is_training, data_format)
   # inputs = conv2d_fixed_padding(
   #     inputs=inputs, filters=filters, kernel_size=3, strides=1,
   #     data_format=data_format)
 
-  # input_channels is the 'channels' in 'inputs' 
-  # if input in the format -> [batch, channels, height_in, width_in] 
-  if data_format == 'channels_first':
-    input_channels = tf.shape(inputs)[1]
-  else:
-    input_channels = tf.shape(inputs)[3]
-  if strides > 1:
-    inputs = fixed_padding(inputs, kernel_size, data_format)
-
-  # replace the convolution layer with LBC function.
-  inputs = LBC(x = inputs, number_of_b = 512,
-          sparsity = 0.5, filter_height = kernel_size,
-          filter_width = kernel_size, input_channels = input_channels,
-          output_channels = filters)
+  inputs = LBC_fixed_padding(inputs = inputs, filters = filters,
+          kernel_size = 3, strides = 1, data_format = data_format)
 
   return inputs + shortcut
 
@@ -193,19 +205,25 @@ def bottleneck_block(inputs, filters, is_training, projection_shortcut,
   if projection_shortcut is not None:
     shortcut = projection_shortcut(inputs)
 
-  inputs = conv2d_fixed_padding(
-      inputs=inputs, filters=filters, kernel_size=1, strides=1,
-      data_format=data_format)
+  # inputs = conv2d_fixed_padding(
+  #     inputs=inputs, filters=filters, kernel_size=1, strides=1,
+  #     data_format=data_format)
+  inputs = LBC_fixed_padding(inputs = inputs, filters = filters,
+          kernel_size = 1, strides = 1, data_format = data_format)
 
   inputs = batch_norm_relu(inputs, is_training, data_format)
-  inputs = conv2d_fixed_padding(
-      inputs=inputs, filters=filters, kernel_size=3, strides=strides,
-      data_format=data_format)
+  # inputs = conv2d_fixed_padding(
+  #     inputs=inputs, filters=filters, kernel_size=3, strides=strides,
+  #     data_format=data_format)
+  inputs = LBC_fixed_padding(inputs = inputs, filters = filters,
+          kernel_size = 3, strides = strides, data_format = data_format)
 
   inputs = batch_norm_relu(inputs, is_training, data_format)
-  inputs = conv2d_fixed_padding(
-      inputs=inputs, filters=4 * filters, kernel_size=1, strides=1,
-      data_format=data_format)
+  # inputs = conv2d_fixed_padding(
+  #     inputs=inputs, filters=4 * filters, kernel_size=1, strides=1,
+  #     data_format=data_format)
+  inputs = LBC_fixed_padding(inputs = inputs, filters = filters,
+          kernel_size = 1, strides = 1, data_format = data_format)
 
   return inputs + shortcut
 
@@ -235,9 +253,12 @@ def block_layer(inputs, filters, block_fn, blocks, strides, is_training, name,
   filters_out = 4 * filters if block_fn is bottleneck_block else filters
 
   def projection_shortcut(inputs):
-    return conv2d_fixed_padding(
-        inputs=inputs, filters=filters_out, kernel_size=1, strides=strides,
-        data_format=data_format)
+    # return conv2d_fixed_padding(
+    #     inputs=inputs, filters=filters_out, kernel_size=1, strides=strides,
+    #     data_format=data_format)
+    return LBC_fixed_padding(
+            inputs = inputs, filters = filters_out, kernel_size = 1,
+            strides = strides, data_format = data_format)
 
   # Only the first block per block_layer uses projection_shortcut and strides
   inputs = block_fn(inputs, filters, is_training, projection_shortcut, strides,
@@ -282,9 +303,11 @@ def cifar10_resnet_v2_generator(resnet_size, num_classes, data_format=None):
       # https://www.tensorflow.org/performance/performance_guide#data_formats
       inputs = tf.transpose(inputs, [0, 3, 1, 2])
 
-    inputs = conv2d_fixed_padding(
-        inputs=inputs, filters=16, kernel_size=3, strides=1,
-        data_format=data_format)
+    # inputs = conv2d_fixed_padding(
+    #     inputs=inputs, filters=16, kernel_size=3, strides=1,
+    #     data_format=data_format)
+    inputs = LBC_fixed_padding(inputs = inputs, filters = 16, kernel_size = 3,
+            strides = 1, data_format = data_format)
     inputs = tf.identity(inputs, 'initial_conv')
 
     inputs = block_layer(
@@ -342,9 +365,11 @@ def imagenet_resnet_v2_generator(block_fn, layers, num_classes,
       # https://www.tensorflow.org/performance/performance_guide#data_formats
       inputs = tf.transpose(inputs, [0, 3, 1, 2])
 
-    inputs = conv2d_fixed_padding(
-        inputs=inputs, filters=64, kernel_size=7, strides=2,
-        data_format=data_format)
+    # inputs = conv2d_fixed_padding(
+    #     inputs=inputs, filters=64, kernel_size=7, strides=2,
+    #     data_format=data_format)
+    inputs = LBC_fixed_padding(inputs = inputs, filters = 64, kernel_size = 7,
+            strides = 2, data_format = data_format)
     inputs = tf.identity(inputs, 'initial_conv')
     inputs = tf.layers.max_pooling2d(
         inputs=inputs, pool_size=3, strides=2, padding='SAME',

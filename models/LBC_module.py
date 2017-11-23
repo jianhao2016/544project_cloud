@@ -33,7 +33,7 @@ FLAGS = None
 def LBC(x, number_of_b, sparsity,
         filter_height, filter_width,
         input_channels, output_channels,
-        shared_weights = False):
+        strides = 1, padding = 'SAME', shared_weights = False):
     """
     performs the LBC function,
     input   -> x : batch of images
@@ -58,15 +58,14 @@ def LBC(x, number_of_b, sparsity,
     ancher_weights_tensor = tf.constant(ancher_weights, dtype = tf.float32)
 
     diffmap = tf.nn.conv2d(x, ancher_weights_tensor, 
-                          strides = [1, 1, 1, 1],
-                          padding = 'SAME')
+                          strides = [1, strides, strides, 1],
+                          padding = padding)
     bitmap = tf.sigmoid(diffmap)
 
     y_LBC = tf.contrib.layers.conv2d(bitmap,
             num_outputs = output_channels,
-            kernel_size = [filter_height,
-                           filter_width],
-            padding = 'SAME')
+            kernel_size = [1,1],
+            padding = padding)
     return y_LBC
 
 def deepnn(x):
