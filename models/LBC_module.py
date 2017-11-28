@@ -58,15 +58,25 @@ def LBC(x, number_of_b, sparsity,
     ancher_weights = np.reshape(ancher_weights, newshape = ancher_shape)
     ancher_weights_tensor = tf.constant(ancher_weights, dtype = tf.float32)
 
-    diffmap = tf.nn.conv2d(x, ancher_weights_tensor, 
-                          strides = [1, strides, strides, 1],
-                          padding = padding, data_format = data_format)
+    # if data_format == 'NCHW':
+    #     strides = strides
+    # else:
+    #     strides = [1, strdes, strides, 1]
+    diffmap = tf.layers.conv2d(x, filters = output_channels, 
+                               kernel_size = filter_height,
+                               strides = strides,
+                               padding = padding,
+                               data_format = data_format,
+                               use_bias = False)
+    # diffmap = tf.nn.conv2d(x, ancher_weights_tensor, 
+    #                       strides = strides,
+    #                       padding = padding, data_format = data_format)
     bitmap = tf.sigmoid(diffmap)
 
     # print(x.get_shape().as_list())
     # print(ancher_weights_tensor.get_shape().as_list())
-    y_LBC = tf.contrib.layers.conv2d(bitmap,
-            num_outputs = output_channels,
+    y_LBC = tf.layers.conv2d(inputs = bitmap,
+            filters = output_channels,
             kernel_size = [1,1],
             padding = padding,
             data_format = data_format)
