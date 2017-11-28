@@ -103,8 +103,10 @@ def LBC_fixed_padding(inputs, filters, kernel_size, strides, data_format,
   # print(input_shape)
   if data_format == 'channels_first':
     input_channels = input_shape[1]
+    tf_format = 'NCHW'
   else:
     input_channels = input_shape[3]
+    tf_format = 'NHWC'
 
   # same padding from conv2d_fixed_padding()
   if strides > 1:
@@ -126,8 +128,9 @@ def LBC_fixed_padding(inputs, filters, kernel_size, strides, data_format,
   inputs = LBC(x = inputs, number_of_b = number_of_b,
           sparsity = sparsity, filter_height = kernel_size,
           filter_width = kernel_size, input_channels = input_channels,
-          output_channels = filters, strides = strides,
-          padding = padding, shared_weights = shared_weights)
+          output_channels = filters, data_format = tf_format, 
+          strides = strides, padding = padding, 
+          shared_weights = shared_weights)
   return inputs
 
 def building_block(inputs, filters, is_training, projection_shortcut, strides,
