@@ -1,3 +1,10 @@
+# Things to do.
+
+1) Make the ResNets model running. KEEP/CALCULATE the model size with respect to numbers of parameters. [similar to what they did in their paper]
+2) We also need to plot the figure of error/accuracy versus number of iteration. And compare with the vanilla model in order to show that LBCNN is faster.
+3) If possible, sample the output from Conv layers and compare with the output of LBC layers. [Not sure feasible]
+4) Do the exact same thing to other networks with similar framework, i.e. multiple conv layers.
+
 # ResNet in TensorFlow
 
 Deep residual networks, or ResNets for short, provided the breakthrough idea of identity mappings in order to enable training of very deep convolutional neural networks. This folder contains an implementation of ResNet for the ImageNet dataset written in TensorFlow.
