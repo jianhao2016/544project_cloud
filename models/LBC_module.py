@@ -62,15 +62,20 @@ def LBC(x, number_of_b, sparsity,
     #     strides = strides
     # else:
     #     strides = [1, strdes, strides, 1]
-    diffmap = tf.layers.conv2d(x, filters = output_channels, 
-                               kernel_size = filter_height,
-                               strides = strides,
-                               padding = padding,
-                               data_format = data_format,
-                               use_bias = False)
-    # diffmap = tf.nn.conv2d(x, ancher_weights_tensor, 
-    #                       strides = strides,
-    #                       padding = padding, data_format = data_format)
+    # diffmap = tf.layers.conv2d(x, filters = output_channels, 
+    #                            kernel_size = filter_height,
+    #                            strides = strides,
+    #                            padding = padding,
+    #                            data_format = data_format,
+    #                            use_bias = False)
+    tf_strides = [1, strides, strides, 1]
+    if data_format == 'channels_first':
+        tf_format = 'NCHW'
+    else:
+        tf_format = 'NHWC'
+    diffmap = tf.nn.conv2d(input = x, filter = ancher_weights_tensor, 
+                          strides = tf_strides,
+                          padding = padding, data_format = tf_format)
     bitmap = tf.sigmoid(diffmap)
 
     # print(x.get_shape().as_list())
@@ -79,7 +84,8 @@ def LBC(x, number_of_b, sparsity,
             filters = output_channels,
             kernel_size = [1,1],
             padding = padding,
-            data_format = data_format)
+            data_format = data_format,
+            use_bias = False)
     return y_LBC
 
 def deepnn(x):
