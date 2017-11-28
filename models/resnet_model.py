@@ -132,7 +132,7 @@ def LBC_fixed_padding(inputs, filters, kernel_size, strides, data_format,
   return inputs
 
 def building_block(inputs, filters, is_training, projection_shortcut, strides,
-                   data_format):
+                   data_format, number_of_b, sparsity, shared_weights):
   """Standard building block for residual networks with BN before convolutions.
 
   Args:
@@ -164,7 +164,9 @@ def building_block(inputs, filters, is_training, projection_shortcut, strides,
   #     data_format=data_format)
 
   inputs = LBC_fixed_padding(inputs = inputs, filters = filters,
-          kernel_size = 3, strides = strides, data_format = data_format)
+          kernel_size = 3, strides = strides, data_format = data_format,
+          number_of_b = number_of_b, sparsity = sparsity,
+          shared_weights = shared_weights)
   
 
   inputs = batch_norm_relu(inputs, is_training, data_format)
@@ -173,13 +175,16 @@ def building_block(inputs, filters, is_training, projection_shortcut, strides,
   #     data_format=data_format)
 
   inputs = LBC_fixed_padding(inputs = inputs, filters = filters,
-          kernel_size = 3, strides = 1, data_format = data_format)
+          kernel_size = 3, strides = 1, data_format = data_format,
+          number_of_b = number_of_b, sparsity = sparsity,
+          shared_weights = shared_weights)
 
   return inputs + shortcut
 
 
 def bottleneck_block(inputs, filters, is_training, projection_shortcut,
-                     strides, data_format):
+                     strides, data_format, number_of_b, sparsity,
+                     shared_weights):
   """Bottleneck block variant for residual networks with BN before convolutions.
 
   Args:
@@ -210,27 +215,33 @@ def bottleneck_block(inputs, filters, is_training, projection_shortcut,
   #     inputs=inputs, filters=filters, kernel_size=1, strides=1,
   #     data_format=data_format)
   inputs = LBC_fixed_padding(inputs = inputs, filters = filters,
-          kernel_size = 1, strides = 1, data_format = data_format)
+          kernel_size = 1, strides = 1, data_format = data_format,
+          number_of_b = number_of_b, sparsity = sparsity,
+          shared_weights = shared_weights)
 
   inputs = batch_norm_relu(inputs, is_training, data_format)
   # inputs = conv2d_fixed_padding(
   #     inputs=inputs, filters=filters, kernel_size=3, strides=strides,
   #     data_format=data_format)
   inputs = LBC_fixed_padding(inputs = inputs, filters = filters,
-          kernel_size = 3, strides = strides, data_format = data_format)
+          kernel_size = 3, strides = strides, data_format = data_format,
+          number_of_b = number_of_b, sparsity = sparsity,
+          shared_weights = shared_weights)
 
   inputs = batch_norm_relu(inputs, is_training, data_format)
   # inputs = conv2d_fixed_padding(
   #     inputs=inputs, filters=4 * filters, kernel_size=1, strides=1,
   #     data_format=data_format)
   inputs = LBC_fixed_padding(inputs = inputs, filters = filters,
-          kernel_size = 1, strides = 1, data_format = data_format)
+          kernel_size = 1, strides = 1, data_format = data_format,
+          number_of_b = number_of_b, sparsity = sparsity,
+          shared_weights = shared_weights)
 
   return inputs + shortcut
 
 
 def block_layer(inputs, filters, block_fn, blocks, strides, is_training, name,
-                data_format):
+                data_format, number_of_b, sparsity, shared_weights):
   """Creates one layer of blocks for the ResNet model.
 
   Args:
@@ -259,19 +270,25 @@ def block_layer(inputs, filters, block_fn, blocks, strides, is_training, name,
     #     data_format=data_format)
     return LBC_fixed_padding(
             inputs = inputs, filters = filters_out, kernel_size = 1,
-            strides = strides, data_format = data_format)
+            strides = strides, data_format = data_format, number_of_b = number_of_b,
+            sparsity = sparsity, shared_weights = shared_weights)
 
   # Only the first block per block_layer uses projection_shortcut and strides
   inputs = block_fn(inputs, filters, is_training, projection_shortcut, strides,
-                    data_format)
+                    data_format,number_of_b = number_of_b, sparsity = sparsity,
+                    shared_weights = shared_weights)
 
   for _ in range(1, blocks):
-    inputs = block_fn(inputs, filters, is_training, None, 1, data_format)
+    inputs = block_fn(inputs, filters, is_training, None, 1, data_format,
+                      number_of_b = number_of_b, sparsity = sparsity,
+                      shared_weights = shared_weights)
 
   return tf.identity(inputs, name)
 
 
-def cifar10_resnet_v2_generator(resnet_size, num_classes, data_format=None):
+def cifar10_resnet_v2_generator(resnet_size, num_classes, data_format=None,
+                                sparsity = 0.5, number_of_b = 512,
+                                shared_weights = False):
   """Generator for CIFAR-10 ResNet v2 models.
 
   Args:
@@ -308,21 +325,25 @@ def cifar10_resnet_v2_generator(resnet_size, num_classes, data_format=None):
     #     inputs=inputs, filters=16, kernel_size=3, strides=1,
     #     data_format=data_format)
     inputs = LBC_fixed_padding(inputs = inputs, filters = 16, kernel_size = 3,
-            strides = 1, data_format = data_format)
+            strides = 1, data_format = data_format, number_of_b = number_of_b,
+            sparsity = sparsity, shared_weights = shared_weights)
     inputs = tf.identity(inputs, 'initial_conv')
 
     inputs = block_layer(
         inputs=inputs, filters=16, block_fn=building_block, blocks=num_blocks,
         strides=1, is_training=is_training, name='block_layer1',
-        data_format=data_format)
+        data_format=data_format, number_of_b = number_of_b, sparsity = sparsity,
+        shared_weights = shared_weights)
     inputs = block_layer(
         inputs=inputs, filters=32, block_fn=building_block, blocks=num_blocks,
         strides=2, is_training=is_training, name='block_layer2',
-        data_format=data_format)
+        data_format=data_format, number_of_b = number_of_b, sparsity = sparsity,
+        shared_weights = shared_weights)
     inputs = block_layer(
         inputs=inputs, filters=64, block_fn=building_block, blocks=num_blocks,
         strides=2, is_training=is_training, name='block_layer3',
-        data_format=data_format)
+        data_format=data_format, number_of_b = number_of_b, sparsity = sparsity,
+        shared_weights = shared_weights)
 
     inputs = batch_norm_relu(inputs, is_training, data_format)
     inputs = tf.layers.average_pooling2d(
@@ -338,7 +359,8 @@ def cifar10_resnet_v2_generator(resnet_size, num_classes, data_format=None):
 
 
 def imagenet_resnet_v2_generator(block_fn, layers, num_classes,
-                                 data_format=None):
+                                 data_format=None, number_of_b,
+                                 sparsity, shared_weights):
   """Generator for ImageNet ResNet v2 models.
 
   Args:
@@ -370,7 +392,8 @@ def imagenet_resnet_v2_generator(block_fn, layers, num_classes,
     #     inputs=inputs, filters=64, kernel_size=7, strides=2,
     #     data_format=data_format)
     inputs = LBC_fixed_padding(inputs = inputs, filters = 64, kernel_size = 7,
-            strides = 2, data_format = data_format)
+            strides = 2, data_format = data_format, number_of_b = number_of_b,
+            sparsity = sparsity, shared_weights = shared_weights)
     inputs = tf.identity(inputs, 'initial_conv')
     inputs = tf.layers.max_pooling2d(
         inputs=inputs, pool_size=3, strides=2, padding='SAME',
@@ -380,19 +403,23 @@ def imagenet_resnet_v2_generator(block_fn, layers, num_classes,
     inputs = block_layer(
         inputs=inputs, filters=64, block_fn=block_fn, blocks=layers[0],
         strides=1, is_training=is_training, name='block_layer1',
-        data_format=data_format)
+        data_format=data_format, number_of_b = number_of_b, sparsity = sparsity,
+        shared_weights = shared_weights)
     inputs = block_layer(
         inputs=inputs, filters=128, block_fn=block_fn, blocks=layers[1],
         strides=2, is_training=is_training, name='block_layer2',
-        data_format=data_format)
+        data_format=data_format, number_of_b = number_of_b, sparsity = sparsity,
+        shared_weights = shared_weights)
     inputs = block_layer(
         inputs=inputs, filters=256, block_fn=block_fn, blocks=layers[2],
         strides=2, is_training=is_training, name='block_layer3',
-        data_format=data_format)
+        data_format=data_format, number_of_b = number_of_b, sparsity = sparsity,
+        shared_weights = shared_weights)
     inputs = block_layer(
         inputs=inputs, filters=512, block_fn=block_fn, blocks=layers[3],
         strides=2, is_training=is_training, name='block_layer4',
-        data_format=data_format)
+        data_format=data_format, number_of_b = number_of_b, sparsity = sparsity,
+        shared_weights = shared_weights)
 
     inputs = batch_norm_relu(inputs, is_training, data_format)
     inputs = tf.layers.average_pooling2d(

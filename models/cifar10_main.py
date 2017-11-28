@@ -55,6 +55,15 @@ parser.add_argument(
          'with CPU. If left unspecified, the data format will be chosen '
          'automatically based on whether TensorFlow was built for CPU or GPU.')
 
+parser.add_argument('--sparsity', type=float, default=0.5,
+                    help='The proportion of ones in the binary mask')
+
+parser.add_argument('--number_of_b', type=int, default=512,
+                    help='The number of binary mask used in LBC')
+
+parse.add_argument('--shared_weights', type=bool, default=False,
+                    help='Shared the binary masks among layers or not'
+
 _HEIGHT = 32
 _WIDTH = 32
 _DEPTH = 3
@@ -266,6 +275,9 @@ def main(unused_argv):
           'resnet_size': FLAGS.resnet_size,
           'data_format': FLAGS.data_format,
           'batch_size': FLAGS.batch_size,
+          'sparsity': FLAGS.sparsity,
+          'number_of_binary_mask': FLAGS.number_of_b,
+          'shared_weights': FLAGA.shared_weights
       })
 
   for _ in range(FLAGS.train_epochs // FLAGS.epochs_per_eval):
