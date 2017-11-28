@@ -61,8 +61,8 @@ parser.add_argument('--sparsity', type=float, default=0.5,
 parser.add_argument('--number_of_b', type=int, default=512,
                     help='The number of binary mask used in LBC')
 
-parse.add_argument('--shared_weights', type=bool, default=False,
-                    help='Shared the binary masks among layers or not'
+parser.add_argument('--shared_weights', type=bool, default=False,
+                    help='Shared the binary masks among layers or not')
 
 _HEIGHT = 32
 _WIDTH = 32
@@ -194,7 +194,9 @@ def cifar10_model_fn(features, labels, mode, params):
   tf.summary.image('images', features, max_outputs=6)
 
   network = resnet_model.cifar10_resnet_v2_generator(
-      params['resnet_size'], _NUM_CLASSES, params['data_format'])
+      params['resnet_size'], _NUM_CLASSES, params['data_format'],
+      number_of_b = params['number_of_binary_mask'], sparsity = params['sparsity'],
+      shared_weights = params['shared_weights'])
 
   inputs = tf.reshape(features, [-1, _HEIGHT, _WIDTH, _DEPTH])
   logits = network(inputs, mode == tf.estimator.ModeKeys.TRAIN)
@@ -277,7 +279,7 @@ def main(unused_argv):
           'batch_size': FLAGS.batch_size,
           'sparsity': FLAGS.sparsity,
           'number_of_binary_mask': FLAGS.number_of_b,
-          'shared_weights': FLAGA.shared_weights
+          'shared_weights': FLAGS.shared_weights
       })
 
   for _ in range(FLAGS.train_epochs // FLAGS.epochs_per_eval):

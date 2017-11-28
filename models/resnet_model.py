@@ -287,7 +287,7 @@ def block_layer(inputs, filters, block_fn, blocks, strides, is_training, name,
 
 
 def cifar10_resnet_v2_generator(resnet_size, num_classes, data_format=None,
-                                sparsity = 0.5, number_of_b = 512,
+                                number_of_b = 512, sparsity = 0.5, 
                                 shared_weights = False):
   """Generator for CIFAR-10 ResNet v2 models.
 
@@ -359,8 +359,8 @@ def cifar10_resnet_v2_generator(resnet_size, num_classes, data_format=None,
 
 
 def imagenet_resnet_v2_generator(block_fn, layers, num_classes,
-                                 data_format=None, number_of_b,
-                                 sparsity, shared_weights):
+                                 data_format=None, number_of_b = 512,
+                                 sparsity = 0.5, shared_weights = False):
   """Generator for ImageNet ResNet v2 models.
 
   Args:
