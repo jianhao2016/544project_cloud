@@ -68,11 +68,12 @@ def LBC(x, number_of_b, sparsity,
     #                            padding = padding,
     #                            data_format = data_format,
     #                            use_bias = False)
-    tf_strides = [1, strides, strides, 1]
     if data_format == 'channels_first':
         tf_format = 'NCHW'
+        tf_strides = [1, 1, strides, strides]
     else:
         tf_format = 'NHWC'
+        tf_strides = [1, strides, strides, 1]
     diffmap = tf.nn.conv2d(input = x, filter = ancher_weights_tensor, 
                           strides = tf_strides,
                           padding = padding, data_format = tf_format)
