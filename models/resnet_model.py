@@ -286,9 +286,9 @@ def block_layer(inputs, filters, block_fn, blocks, strides, is_training, name,
   return tf.identity(inputs, name)
 
 
-def cifar10_resnet_v2_generator(resnet_size, num_classes, data_format=None,
-                                number_of_b = 512, sparsity = 0.5, 
-                                shared_weights = False):
+def cifar10_resnet_v2_generator(resnet_size, num_classes, data_format,
+                                number_of_b, sparsity, 
+                                shared_weights):
   """Generator for CIFAR-10 ResNet v2 models.
 
   Args:
