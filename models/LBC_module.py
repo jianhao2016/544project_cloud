@@ -77,7 +77,7 @@ def LBC(x, number_of_b, sparsity,
     diffmap = tf.nn.conv2d(input = x, filter = ancher_weights_tensor, 
                           strides = tf_strides,
                           padding = padding, data_format = tf_format)
-    bitmap = tf.sigmoid(diffmap)
+    bitmap = tf.nn.relu(diffmap)
 
     # print(x.get_shape().as_list())
     # print(ancher_weights_tensor.get_shape().as_list())
