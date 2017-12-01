@@ -26,6 +26,14 @@ import tensorflow as tf
 
 import resnet_model
 
+def str2bool(v):
+  if v.lower() in ('yes', 'true', '1', 'y', 't'):
+    return True
+  elif v.lower() in ('no', 'false', '0', 'n', 'f'):
+    return False
+  else:
+    raise argparse.ArgumentTypeError('Boolean value expected')
+
 parser = argparse.ArgumentParser()
 
 # Basic model parameters.
@@ -61,7 +69,7 @@ parser.add_argument('--sparsity', type=float, default=0.5,
 parser.add_argument('--number_of_b', type=int, default=512,
                     help='The number of binary mask used in LBC')
 
-parser.add_argument('--shared_weights', type=bool, default=False,
+parser.add_argument('--shared_weights', type=str2bool, default=False,
                     help='Shared the binary masks among layers or not')
 
 _HEIGHT = 32
