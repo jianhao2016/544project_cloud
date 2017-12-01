@@ -265,13 +265,13 @@ def block_layer(inputs, filters, block_fn, blocks, strides, is_training, name,
   filters_out = 4 * filters if block_fn is bottleneck_block else filters
 
   def projection_shortcut(inputs):
-    # return conv2d_fixed_padding(
-    #     inputs=inputs, filters=filters_out, kernel_size=1, strides=strides,
-    #     data_format=data_format)
-    return LBC_fixed_padding(
-            inputs = inputs, filters = filters_out, kernel_size = 1,
-            strides = strides, data_format = data_format, number_of_b = number_of_b,
-            sparsity = sparsity, shared_weights = shared_weights)
+    return conv2d_fixed_padding(
+        inputs=inputs, filters=filters_out, kernel_size=1, strides=strides,
+        data_format=data_format)
+    # return LBC_fixed_padding(
+    #         inputs = inputs, filters = filters_out, kernel_size = 1,
+    #         strides = strides, data_format = data_format, number_of_b = number_of_b,
+    #         sparsity = sparsity, shared_weights = shared_weights)
 
   # Only the first block per block_layer uses projection_shortcut and strides
   inputs = block_fn(inputs, filters, is_training, projection_shortcut, strides,
