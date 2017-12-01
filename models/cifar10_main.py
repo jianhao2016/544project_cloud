@@ -199,6 +199,8 @@ def input_fn(is_training, data_dir, batch_size, num_epochs=1):
 
 def cifar10_model_fn(features, labels, mode, params):
   """Model function for CIFAR-10."""
+  print('Called cifar10_model_fn!')
+  print('params in cifar10_model_fn = {}'.format(params))
   tf.summary.image('images', features, max_outputs=6)
 
   network = resnet_model.cifar10_resnet_v2_generator(
@@ -279,16 +281,27 @@ def main(unused_argv):
 
   # Set up a RunConfig to only save checkpoints once per training cycle.
   run_config = tf.estimator.RunConfig().replace(save_checkpoints_secs=1e9)
+  params = {
+            'resnet_size': FLAGS.resnet_size,
+            'data_format': FLAGS.data_format,
+            'batch_size': FLAGS.batch_size,
+            'sparsity': FLAGS.sparsity,
+            'number_of_binary_mask': FLAGS.number_of_b,
+            'shared_weights': FLAGS.shared_weights
+           }
+  print('params in main: \n {}'.format(params))
+
   cifar_classifier = tf.estimator.Estimator(
       model_fn=cifar10_model_fn, model_dir=FLAGS.model_dir, config=run_config,
-      params={
-          'resnet_size': FLAGS.resnet_size,
-          'data_format': FLAGS.data_format,
-          'batch_size': FLAGS.batch_size,
-          'sparsity': FLAGS.sparsity,
-          'number_of_binary_mask': FLAGS.number_of_b,
-          'shared_weights': FLAGS.shared_weights
-      })
+      params = params)
+      # params={
+      #     'resnet_size': FLAGS.resnet_size,
+      #     'data_format': FLAGS.data_format,
+      #     'batch_size': FLAGS.batch_size,
+      #     'sparsity': FLAGS.sparsity,
+      #     'number_of_binary_mask': FLAGS.number_of_b,
+      #     'shared_weights': FLAGS.shared_weights
+      # })
 
   for _ in range(FLAGS.train_epochs // FLAGS.epochs_per_eval):
     tensors_to_log = {
@@ -315,4 +328,6 @@ def main(unused_argv):
 if __name__ == '__main__':
   tf.logging.set_verbosity(tf.logging.INFO)
   FLAGS, unparsed = parser.parse_known_args()
+  print(FLAGS)
+  print(unparsed)
   tf.app.run(argv=[sys.argv[0]] + unparsed)

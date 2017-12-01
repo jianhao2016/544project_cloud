@@ -304,6 +304,12 @@ def cifar10_resnet_v2_generator(resnet_size, num_classes, data_format,
   Raises:
     ValueError: If `resnet_size` is invalid.
   """
+  print("called cifar10_resnet_v2_generator!")
+  print('data_format = {}'.format(data_format))
+  print('number_of_b = {}'.format(number_of_b))
+  print('sparsity = {}'.format(sparsity))
+  print('shared_weights = {}'.format(shared_weights))
+
   if resnet_size % 6 != 2:
     raise ValueError('resnet_size must be 6n + 2:', resnet_size)
 
