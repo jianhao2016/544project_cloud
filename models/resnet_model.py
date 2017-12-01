@@ -93,7 +93,7 @@ def conv2d_fixed_padding(inputs, filters, kernel_size, strides, data_format):
       data_format=data_format)
 
 def LBC_fixed_padding(inputs, filters, kernel_size, strides, data_format,
-        number_of_b = 512, sparsity = 0.5, shared_weights = 'Fasle'):
+        number_of_b, sparsity, shared_weights):
   """
   Local Binary Convolution replacement.
   """
