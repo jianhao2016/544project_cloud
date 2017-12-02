@@ -1,3 +1,10 @@
+# small tasks
+1) Wu, write the argument parser. Replace "numWeights" with "number_of_b".
+Add "shared_weights" to parser. Refer to the cifar10_main.py how to pass boolean into parser. Get familiar with Google Cloud. How to send code to cloud and run on Google Cloud. Try some tutorial code on it.
+
+2) Yu, tensor size in conv layer/number of nodes in fully connect layer. In each layer, kernel/filter size in each layer, strides, padding or not(what padding). Smallest modules are conv2d, fully-connected, batch-normalization, relu/sigmoid/activation function, softmax, 
+
+3) Peng, will update the resnet model with LBC.
 # Things to do.
 
 1) Make the ResNets model running. KEEP/CALCULATE the model size with respect to numbers of parameters. [similar to what they did in their paper]
