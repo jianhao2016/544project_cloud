@@ -4,6 +4,7 @@ Add "shared_weights" to parser. Refer to the cifar10_main.py how to pass boolean
 
 2) Yu, tensor size in conv layer/number of nodes in fully connect layer. In each layer, kernel/filter size in each layer, strides, padding or not(what padding). Smallest modules are conv2d, fully-connected, batch-normalization, relu/sigmoid/activation function, softmax, etc. 
 Also, what kind of loss/regularization, what optimizer, learning rate, training epoch, batch size, may refer to their paper setup.
+Better be shown in figures.
 
 3) Peng, will update the resnet model with LBC.
 # Things to do.
