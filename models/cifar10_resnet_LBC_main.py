@@ -259,23 +259,20 @@ def main(unused_argv):
       model_fn=cifar10_model_fn, params = params)
 
   for _ in range(FLAGS.train_epochs // FLAGS.epochs_per_eval):
-    # tensors_to_log = {
-    #     'learning_rate': 'learning_rate',
-    #     'cross_entropy': 'cross_entropy',
-    #     'train_accuracy': 'train_accuracy'
-    # }
+    tensors_to_log = {
+        'learning_rate': 'learning_rate',
+        'cross_entropy': 'cross_entropy',
+        'train_accuracy': 'train_accuracy'
+    }
 
-    # logging_hook = tf.train.LoggingTensorHook(
-    #     tensors=tensors_to_log, every_n_iter=100)
-
-    # cifar_classifier.train(
-    #     input_fn=lambda: input_fn(
-    #         True, FLAGS.data_dir, FLAGS.batch_size, FLAGS.epochs_per_eval),
-    #     hooks=[logging_hook])
+    logging_hook = tf.train.LoggingTensorHook(
+        tensors=tensors_to_log, every_n_iter=50)
 
     cifar_classifier.train(
         input_fn=lambda: input_fn(
-            True, FLAGS.data_dir, FLAGS.batch_size, FLAGS.epochs_per_eval))
+            True, FLAGS.data_dir, FLAGS.batch_size, FLAGS.epochs_per_eval),
+        hooks=[logging_hook])
+
     # Evaluate the model and print results
     eval_results = cifar_classifier.evaluate(
         input_fn=lambda: input_fn(False, FLAGS.data_dir, FLAGS.batch_size))
@@ -288,7 +285,7 @@ if __name__ == '__main__':
   FLAGS = TEMP_opt()
   FLAGS.model_dir = '../trained_model/resnet/'
   FLAGS.data_dir = '../data/cifar10'
-  FLAGS.train_epochs = 200
+  FLAGS.train_epochs = 100
   FLAGS.epochs_per_eval = 5
   print(FLAGS)
   tf.app.run()
