@@ -21,6 +21,7 @@ import resnet_LBC
 import base64
 
 opt = TEMP_opt()
+# opt.depth = 2
 
 _image_width = 32
 _image_height = 32
@@ -95,9 +96,11 @@ labels = tf.placeholder(tf.float32, shape = [None])
 one_hot_labels = tf.one_hot(tf.cast(labels, tf.int32), depth = opt.nClass)
 learning_rate = tf.placeholder(tf.float32, shape = [])
 training_rate = 0.1
+is_training = tf.placeholder(tf.bool, shape = [], name = 'training_flag')
+# we can probably add drop-out rate here. As a placeholder.
 
 # compute the output of a graph and see the loss/accuracy
-logits = network(images, is_training = True)
+logits = network(images, is_training = is_training)
 cross_entropy = tf.losses.softmax_cross_entropy(one_hot_labels, logits)
 
 loss = cross_entropy + _WEIGHT_DECAY * tf.add_n(
@@ -114,27 +117,38 @@ with tf.Session() as sess:
     eval_images = test_data
     eval_labels = test_label
     test_dict = {images : eval_images,
-                 labels : eval_labels}
+                 labels : eval_labels,
+                 is_training: False}
     for epoch in range(opt.nEpochs):
         # shuffle the data set
         train_data, train_label = shuffleDataSet(train_data, train_label)
         for iter in range(_train_dataset_size // opt.batch_size):
             # decrease the learning rate in a naive way.
-            step = epoch * _train_dataset_size + iter
+            step = epoch * (_train_dataset_size//opt.batch_size) + iter
             if step in [5e3, 1e4, 5e4, 1e5]:
                 training_rate *= 0.1
             # sample batchs from training data.
             images_batch = train_data[iter : iter + opt.batch_size]
             labels_batch = train_label[iter : iter + opt.batch_size]
-            feed_dict = {images : images_batch,
+            feed_dict_1 = {images : images_batch,
                          labels : labels_batch,
-                         learning_rate : training_rate}
-            sess.run(train_op, feed_dict = feed_dict)
-            train_loss, train_acc = sess.run(
-                    [loss, accuracy], feed_dict = feed_dict)
+                         learning_rate : training_rate,
+                         is_training : True}
+            sess.run(train_op, feed_dict = feed_dict_1)
+            train_loss_w_bn, train_xentro_w_bn, train_acc_w_bn = sess.run(
+                    [loss, cross_entropy, accuracy], feed_dict = feed_dict_1)
+            feed_dict_2 = {images : images_batch,
+                         labels : labels_batch,
+                         learning_rate : training_rate,
+                         is_training : False}
+            train_loss_wo_bn, train_xentro_wo_bn, train_acc_wo_bn = sess.run(
+                    [loss, cross_entropy, accuracy], feed_dict = feed_dict_2)
             if iter%50 == 0:
-                print('step {}, training loss = {}, training accuracy{}'.format(
-                    step, train_loss, train_acc))
+                print('step {}, with batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
+                    step, train_loss_w_bn, train_xentro_w_bn, train_acc_w_bn))
+                print('step {}, without batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
+                    step, train_loss_wo_bn, train_loss_wo_bn, train_acc_wo_bn))
+                print('----')
         eval_loss, eval_acc = sess.run([loss, accuracy], feed_dict = test_dict)
         print('epoch# {}, evaluation loss = {}, accuracy = {}'.format(
             epoch, eval_loss, eval_acc))
