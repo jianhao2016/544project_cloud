@@ -189,8 +189,9 @@ tf.identity(cross_entropy, name='cross_entropy')
 tf.summary.scalar('cross_entropy', cross_entropy)
 
 # Add weight decay to the loss.
-loss = cross_entropy + _WEIGHT_DECAY * tf.add_n(
-    [tf.nn.l2_loss(v) for v in tf.trainable_variables()])
+# loss = cross_entropy + _WEIGHT_DECAY * tf.add_n(
+#     [tf.nn.l2_loss(v) for v in tf.trainable_variables()])
+loss = cross_entropy
 tf.identity(loss, name='loss')
 tf.summary.scalar('loss', loss)
 
@@ -201,9 +202,9 @@ optimizer = tf.train.MomentumOptimizer(
 
 train_op = optimizer.minimize(loss)
 
-# accuracy = tf.metrics.accuracy(
-#     tf.argmax(labels, axis=1), predictions['classes'])
-# tf.identity(accuracy[1], name = 'train_accuracy')
+accuracy = tf.metrics.accuracy(
+    tf.argmax(labels, axis=1), predictions['classes'])
+tf.identity(accuracy[1], name = 'train_accuracy')
 # tf.summary.scalar('train_accuracy', accuracy[1])
 
 merged = tf.summary.merge_all()
@@ -220,6 +221,9 @@ with tf.Session() as sess:
         print(y)
         train_summary, _ = sess.run([train_op, merged]) 
         train_loss = sess.run(loss)
+        sess.run(predictions)
+        accuracy = sess.run(accuracy)
+        print(accuracy)
         print('iter {}, loss = {}, acc = {}'.format(i, train_loss, 0))
         [features, labels] = input_fn(True, '../data/cifar10', 5)
     # x = sess.run(inputs)
