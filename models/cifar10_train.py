@@ -21,7 +21,7 @@ import resnet_LBC
 import base64
 
 opt = TEMP_opt()
-# opt.depth = 2
+opt.depth = 20
 
 _image_width = 32
 _image_height = 32
@@ -103,8 +103,9 @@ is_training = tf.placeholder(tf.bool, shape = [], name = 'training_flag')
 logits = network(images, is_training = is_training)
 cross_entropy = tf.losses.softmax_cross_entropy(one_hot_labels, logits)
 
-loss = cross_entropy + _WEIGHT_DECAY * tf.add_n(
-    [tf.nn.l2_loss(v) for v in tf.trainable_variables()])
+# loss = cross_entropy + _WEIGHT_DECAY * tf.add_n(
+#    [tf.nn.l2_loss(v) for v in tf.trainable_variables()])
+loss = cross_entropy
 
 optimizer = tf.train.MomentumOptimizer(learning_rate = learning_rate, momentum = _momentum)
 train_op = optimizer.minimize(loss)
@@ -154,8 +155,8 @@ with tf.Session() as sess:
         for i in range(_test_dataset_size//opt.batch_size):
             eval_images = test_data
             eval_labels = test_label
-            test_dict = {images : eval_images[i, i + opt.batch_size],
-                         labels : eval_labels[i, i + opt.batch_size],
+            test_dict = {images : eval_images[i: i + opt.batch_size],
+                         labels : eval_labels[i: i + opt.batch_size],
                          is_training: False}
             test_batch_loss, test_batch_acc = sess.run([loss, accuracy], feed_dict = test_dict)
             eval_loss += test_batch_loss
