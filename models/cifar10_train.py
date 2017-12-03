@@ -15,223 +15,92 @@ from __future__ import print_function
 
 from TEMP_opt import TEMP_opt
 
-import argparse
-import os
-import sys
-
+import numpy as np
 import tensorflow as tf
-
 import resnet_LBC
 
-_HEIGHT = 32
-_WIDTH = 32
-_DEPTH = 3
-_NUM_CLASSES = 10
-_NUM_DATA_FILES = 5
+opt = TEMP_opt()
 
-# We use a weight decay of 0.0002, which performs better than the 0.0001 that
-# was originally suggested.
+_image_width = 32
+_image_height = 32
+_channels = 3
+_train_dataset_size = 50000
+_test_dataset_size = 10000
 _WEIGHT_DECAY = 2e-4
-_MOMENTUM = 0.9
+_momentum = 0.9
 
-_NUM_IMAGES = {
-    'train': 50000,
-    'validation': 10000,
-}
+def unpickle(file):
+    import pickle
+    with open(file, 'rb') as fo:
+        dict = pickle.load(fo, encoding='bytes')
+    return dict
 
+# unpacking training and test data
+b1 = unpickle('~/projects/544project/data/cifar-10-batches-py/data_batch_1')
+b2 = unpickle('~/projects/544project/data/cifar-10-batches-py/data_batch_2')
+b3 = unpickle('~/projects/544project/data/cifar-10-batches-py/data_batch_3')
+b4 = unpickle('~/projects/544project/data/cifar-10-batches-py/data_batch_4')
+b5 = unpickle('~/projects/544project/data/cifar-10-batches-py/data_batch_5')
 
-def record_dataset(filenames):
-  """Returns an input pipeline Dataset from `filenames`."""
-  record_bytes = _HEIGHT * _WIDTH * _DEPTH + 1
-  return tf.data.FixedLengthRecordDataset(filenames, record_bytes)
+test = unpickle('~/projects/544project/data/cifar-10-batches-py/test-batch')
 
+# preparing test data
+test_data = test['data']
+test_label = test['label']
 
-def get_filenames(is_training, data_dir):
-  """Returns a list of filenames."""
-  data_dir = os.path.join(data_dir, 'cifar-10-batches-bin')
+# preparing training data
+train_data = np.concatenate([b1['data'],b2['data'],b3['data'],b4['data'],b5['data']],axis=0)
+train_label = np.concatenate([b1['labels'],b2['labels'],b3['labels'],b4['labels'],b5['labels']],axis=0)
 
-  assert os.path.exists(data_dir), (
-      'Run cifar10_download_and_extract.py first to download and extract the '
-      'CIFAR-10 data.')
-
-  if is_training:
-    return [
-        os.path.join(data_dir, 'data_batch_%d.bin' % i)
-        for i in range(1, _NUM_DATA_FILES + 1)
-    ]
-  else:
-    return [os.path.join(data_dir, 'test_batch.bin')]
-
-
-def parse_record(raw_record):
-  """Parse CIFAR-10 image and label from a raw record."""
-  # Every record consists of a label followed by the image, with a fixed number
-  # of bytes for each.
-  label_bytes = 1
-  image_bytes = _HEIGHT * _WIDTH * _DEPTH
-  record_bytes = label_bytes + image_bytes
-
-  # Convert bytes to a vector of uint8 that is record_bytes long.
-  record_vector = tf.decode_raw(raw_record, tf.uint8)
-
-  # The first byte represents the label, which we convert from uint8 to int32
-  # and then to one-hot.
-  label = tf.cast(record_vector[0], tf.int32)
-  label = tf.one_hot(label, _NUM_CLASSES)
-
-  # The remaining bytes after the label represent the image, which we reshape
-  # from [depth * height * width] to [depth, height, width].
-  depth_major = tf.reshape(
-      record_vector[label_bytes:record_bytes], [_DEPTH, _HEIGHT, _WIDTH])
-
-  # Convert from [depth, height, width] to [height, width, depth], and cast as
-  # float32.
-  image = tf.cast(tf.transpose(depth_major, [1, 2, 0]), tf.float32)
-
-  return image, label
+#Reshaping data
+# if opt.data_format == 'channels_first':
+#     train_data = np.reshape(train_data, newshape = 
+#         [_train_dataset_size, _channels, _image_height, _image_width])
+#     test_data = np.reshape(test_data, newshape = 
+#         [_test_dataset_size, _channels, _image_height, _image_width])
+#     
+# elif opt.data_format == 'channels_last':
+#     train_data = np.reshape(train_data, newshape = 
+#         [_train_dataset_size, _image_height, _image_width, _channels])
+#     test_data = np.reshape(test_data, newshape = 
+#         [_test_dataset_size, _image_height, _image_width, _channels])
+# else:
+#     print('data_format error. check opt file')
+#     exit(1)
+train_data = np.reshape(train_data, newshape = 
+    [_train_dataset_size, _image_height, _image_width, _channels])
+test_data = np.reshape(test_data, newshape = 
+    [_test_dataset_size, _image_height, _image_width, _channels])
 
 
-def preprocess_image(image, is_training):
-  """Preprocess a single image of layout [height, width, depth]."""
-  if is_training:
-    # Resize the image to add four extra pixels on each side.
-    image = tf.image.resize_image_with_crop_or_pad(
-        image, _HEIGHT + 8, _WIDTH + 8)
+network = resnet_LBC.cifar10_resnet_LBC_generator(depth = opt.depth,
+        nClass = opt.nClass, kSize = opt.kSize, numChannels = opt.numChannels,
+        units_in_FC = opt.full, data_format = opt.data_format,
+        number_of_b = opt.number_of_b, sparsity = opt.sparsity,
+        shared_weights = opt.shared_weights)
 
-    # Randomly crop a [_HEIGHT, _WIDTH] section of the image.
-    image = tf.random_crop(image, [_HEIGHT, _WIDTH, _DEPTH])
+# construct the graph
+images = tf.placeholder(tf.float32, shape = [None, _image_height, _image_width, _channels])
+labels = tf.placeholder(tf.float32, shape = [None])
+one_hot_labels = tf.one_hot(labels, depth = opt.nClass)
+learning_rate = tf.placeholder(tf.float32, shape = [])
 
-    # Randomly flip the image horizontally.
-    image = tf.image.random_flip_left_right(image)
+# compute the output of a graph and see the loss/accuracy
+logits = network(images, is_training = True)
+cross_entropy = tf.losses.softmax_cross_entropy(one_hot_labels, logits)
 
-  # Subtract off the mean and divide by the variance of the pixels.
-  image = tf.image.per_image_standardization(image)
-  return image
+loss = cross_entropy + _WEIGHT_DECAY * tf.add_n(
+    [tf.nn.l2_loss(v) for v in tf.trainable_variables()])
 
-
-def input_fn(is_training, data_dir, batch_size, num_epochs=1):
-  """Input_fn using the tf.data input pipeline for CIFAR-10 dataset.
-
-  Args:
-    is_training: A boolean denoting whether the input is for training.
-    data_dir: The directory containing the input data.
-    batch_size: The number of samples per batch.
-    num_epochs: The number of epochs to repeat the dataset.
-
-  Returns:
-    A tuple of images and labels.
-  """
-  dataset = record_dataset(get_filenames(is_training, data_dir))
-
-  if is_training:
-    # When choosing shuffle buffer sizes, larger sizes result in better
-    # randomness, while smaller sizes have better performance. Because CIFAR-10
-    # is a relatively small dataset, we choose to shuffle the full epoch.
-    dataset = dataset.shuffle(buffer_size=_NUM_IMAGES['train'])
-
-  dataset = dataset.map(parse_record)
-  dataset = dataset.map(
-      lambda image, label: (preprocess_image(image, is_training), label))
-
-  dataset = dataset.prefetch(2 * batch_size)
-
-  # We call repeat after shuffling, rather than before, to prevent separate
-  # epochs from blending together.
-  dataset = dataset.repeat(num_epochs)
-
-  # Batch results by up to batch_size, and then fetch the tuple from the
-  # iterator.
-  dataset = dataset.batch(batch_size)
-  iterator = dataset.make_one_shot_iterator()
-  images, labels = iterator.get_next()
-
-  return images, labels
-
-
-FLAGS = TEMP_opt()
-params = {
-        'depth': FLAGS.depth,
-        'nClass': FLAGS.nClass,
-        'kSize': FLAGS.convSize,
-        'numChannels': FLAGS.numChannels,
-        'units_in_FC': FLAGS.full,
-        'data_format': FLAGS.data_format,
-        'number_of_b': FLAGS.number_of_b,
-        'sparsity': FLAGS.sparsity,
-        'shared_weights': FLAGS.shared_weights,
-        'batch_size': FLAGS.batch_size
-        }
-
-network = resnet_LBC.cifar10_resnet_LBC_generator(
-        depth = params['depth'], nClass = params['nClass'],
-        kSize = params['kSize'], numChannels = params['numChannels'],
-        units_in_FC = params['units_in_FC'], data_format = params['data_format'],
-        number_of_b = params['number_of_b'], sparsity = params['sparsity'],
-        shared_weights = params['shared_weights'])
-
-[features, labels] = input_fn(False, '../data/cifar10', 3)
-
-inputs = tf.reshape(features, [-1, _HEIGHT, _WIDTH, _DEPTH])
-tf.summary.image('sample_images', inputs)
-
-logits = network(inputs, False)
-
-predictions = {
-    'classes': tf.argmax(logits, axis=1),
-    'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
-}
-
-cross_entropy = tf.losses.softmax_cross_entropy(
-    logits=logits, onehot_labels=labels)
-
-# Create a tensor named cross_entropy for logging purposes.
-tf.identity(cross_entropy, name='cross_entropy')
-tf.summary.scalar('cross_entropy', cross_entropy)
-
-# Add weight decay to the loss.
-# loss = cross_entropy + _WEIGHT_DECAY * tf.add_n(
-#     [tf.nn.l2_loss(v) for v in tf.trainable_variables()])
-loss = cross_entropy
-tf.identity(loss, name='loss')
-tf.summary.scalar('loss', loss)
-
-optimizer = tf.train.MomentumOptimizer(
-    learning_rate=0.1,
-    momentum=_MOMENTUM)
-
-
+optimizer = tf.train.MomentumOptimizer(learning_rate = learning_rate, momentum = _momentum)
 train_op = optimizer.minimize(loss)
-
-accuracy = tf.metrics.accuracy(
-    tf.argmax(labels, axis=1), predictions['classes'])
-tf.identity(accuracy[1], name = 'train_accuracy')
-# tf.summary.scalar('train_accuracy', accuracy[1])
-
-merged = tf.summary.merge_all()
-train_writer = tf.summary.FileWriter('tensorboard_test/')
+correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(one_hot_labels, 1))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-    train_writer.add_graph(sess.graph)
-    summary = sess.run(merged)
-    train_writer.add_summary(summary)
-    
-    for i in range(5):
-        y = sess.run(labels)
-        print(y)
-        train_summary, _ = sess.run([train_op, merged]) 
-        train_loss = sess.run(loss)
-        sess.run(predictions)
-        accuracy = sess.run(accuracy)
-        print(accuracy)
-        print('iter {}, loss = {}, acc = {}'.format(i, train_loss, 0))
-        [features, labels] = input_fn(True, '../data/cifar10', 5)
-    # x = sess.run(inputs)
-    # print(x.shape)
-    # output_logit = sess.run(logits)
-    # print(output_logit.shape)
-        
-          
-          
-          
-          
+    init = tf.global_variables_initializer()
+    sess.run(init)
+    for epoch in range(opt.nEpochs):
+        # shuffle the data set
+        for iter in range(_train_dataset_size // opt.batch_size):
+

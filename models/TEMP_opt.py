@@ -25,7 +25,7 @@ class TEMP_opt:
         self.nEpochs = 0 # number of total epochs to run
         # self.epochNumber = 1 # manual epoch number
         self.batch_size = 20
-        self.data_format = None
+        self.data_format = 'channels_first'
         self.shared_weights = False
 
 
