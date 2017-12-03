@@ -237,7 +237,7 @@ def main(unused_argv):
   os.environ['TF_ENABLE_WINOGRAD_NONFUSED'] = '1'
 
   # Set up a RunConfig to only save checkpoints once per training cycle.
-  run_config = tf.estimator.RunConfig().replace(save_checkpoints_secs=1e9)
+  # run_config = tf.estimator.RunConfig().replace(save_checkpoints_secs=1e9)
   params = {
           'depth': FLAGS.depth,
           'nClass': FLAGS.nClass,
@@ -252,25 +252,30 @@ def main(unused_argv):
           }
   print('params in main: \n {}'.format(params))
 
+  # cifar_classifier = tf.estimator.Estimator(
+  #     model_fn=cifar10_model_fn, model_dir=FLAGS.model_dir, config=run_config,
+  #     params = params)
   cifar_classifier = tf.estimator.Estimator(
-      model_fn=cifar10_model_fn, model_dir=FLAGS.model_dir, config=run_config,
-      params = params)
+      model_fn=cifar10_model_fn, params = params)
 
   for _ in range(FLAGS.train_epochs // FLAGS.epochs_per_eval):
-    tensors_to_log = {
-        'learning_rate': 'learning_rate',
-        'cross_entropy': 'cross_entropy',
-        'train_accuracy': 'train_accuracy'
-    }
+    # tensors_to_log = {
+    #     'learning_rate': 'learning_rate',
+    #     'cross_entropy': 'cross_entropy',
+    #     'train_accuracy': 'train_accuracy'
+    # }
 
-    logging_hook = tf.train.LoggingTensorHook(
-        tensors=tensors_to_log, every_n_iter=100)
+    # logging_hook = tf.train.LoggingTensorHook(
+    #     tensors=tensors_to_log, every_n_iter=100)
+
+    # cifar_classifier.train(
+    #     input_fn=lambda: input_fn(
+    #         True, FLAGS.data_dir, FLAGS.batch_size, FLAGS.epochs_per_eval),
+    #     hooks=[logging_hook])
 
     cifar_classifier.train(
         input_fn=lambda: input_fn(
-            True, FLAGS.data_dir, FLAGS.batch_size, FLAGS.epochs_per_eval),
-        hooks=[logging_hook])
-
+            True, FLAGS.data_dir, FLAGS.batch_size, FLAGS.epochs_per_eval))
     # Evaluate the model and print results
     eval_results = cifar_classifier.evaluate(
         input_fn=lambda: input_fn(False, FLAGS.data_dir, FLAGS.batch_size))
@@ -279,7 +284,7 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  tf.logging.set_verbosity(tf.logging.INFO)
+  # tf.logging.set_verbosity(tf.logging.INFO)
   FLAGS = TEMP_opt()
   FLAGS.model_dir = '../trained_model/resnet/'
   FLAGS.data_dir = '../data/cifar10'

@@ -151,7 +151,7 @@ def cifar10_resnet_LBC_generator(depth, nClass, kSize, numChannels,
         # not necessary to add batch normalization, since each basic block hase bn
         # inputs = batch_norm_relu(inputs, is_training, data_format)
         
-        for i in range(1, depth):
+        for i in range(depth):
             block_name = 'LBC_residual_block_' + str(i)
             inputs = basic_block_LBC(inputs, nChIn, nChTmp, kSize, is_training,
                     data_format = data_format, sparsity = sparsity,
