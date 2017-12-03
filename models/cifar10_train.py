@@ -84,7 +84,7 @@ test_data = np.reshape(test_data, newshape =
     [_test_dataset_size, _image_height, _image_width, _channels])
 
 
-network = resnet_LBC.cifar10_resnet_LBC_generator(depth = opt.depth,
+network = resnet_LBC.cifar10_resnet_vanilla_generator(depth = opt.depth,
         nClass = opt.nClass, kSize = opt.convSize, numChannels = opt.numChannels,
         units_in_FC = opt.full, data_format = opt.data_format,
         number_of_b = opt.number_of_b, sparsity = opt.sparsity,
@@ -148,6 +148,10 @@ with tf.Session() as sess:
                     step, train_loss_w_bn, train_xentro_w_bn, train_acc_w_bn))
                 print('step {}, without batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
                     step, train_loss_wo_bn, train_loss_wo_bn, train_acc_wo_bn))
+                val_loss, val_xe, val_acc = sess.run([loss, cross_entropy, accuracy],
+                        feed_dict = feed_dict_1)
+                print('validatation, step = {}, loss = {}, xe = {}, acc = {}'.format(
+                        step, val_loss, val_xe, val_acc))
                 print('----')
         eval_loss, eval_acc = sess.run([loss, accuracy], feed_dict = test_dict)
         print('epoch# {}, evaluation loss = {}, accuracy = {}'.format(
