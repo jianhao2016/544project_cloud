@@ -114,11 +114,6 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 with tf.Session() as sess:
     init = tf.global_variables_initializer()
     sess.run(init)
-    eval_images = test_data
-    eval_labels = test_label
-    test_dict = {images : eval_images,
-                 labels : eval_labels,
-                 is_training: False}
     for epoch in range(opt.nEpochs):
         # shuffle the data set
         train_data, train_label = shuffleDataSet(train_data, train_label)
@@ -153,7 +148,20 @@ with tf.Session() as sess:
                 print('validatation, step = {}, loss = {}, xe = {}, acc = {}'.format(
                         step, val_loss, val_xe, val_acc))
                 print('----')
-        eval_loss, eval_acc = sess.run([loss, accuracy], feed_dict = test_dict)
+        # do evaluation every epoch.
+        eval_loss = 0
+        eval_acc = 0
+        for i in range(_test_dataset_size//opt.batch_size):
+            eval_images = test_data
+            eval_labels = test_label
+            test_dict = {images : eval_images[i, i + opt.batch_size],
+                         labels : eval_labels[i, i + opt.batch_size],
+                         is_training: False}
+            test_batch_loss, test_batch_acc = sess.run([loss, accuracy], feed_dict = test_dict)
+            eval_loss += test_batch_loss
+            eval_acc += test_batch_acc
+        eval_loss = eval_loss/(_test_dataset_size//opt.batch_size)
+        eval_acc = eval_acc/(_test_dataset_size//opt.batch_size)
         print('epoch# {}, evaluation loss = {}, accuracy = {}'.format(
             epoch, eval_loss, eval_acc))
 
