@@ -18,10 +18,11 @@ from TEMP_opt import TEMP_opt
 import numpy as np
 import tensorflow as tf
 import resnet_LBC
+# from resnet_LBC import random_binary_convlution
 import base64
 
 opt = TEMP_opt()
-opt.depth = 20
+# opt.depth = 20
 
 _image_width = 32
 _image_height = 32
@@ -30,6 +31,9 @@ _train_dataset_size = 50000
 _test_dataset_size = 10000
 _WEIGHT_DECAY = 2e-4
 _momentum = 0.9
+
+_BATCH_NORM_DECAY = 0.997
+_BATCH_NORM_EPSILON = 1e-5
 
 def unpickle(file):
     import pickle
@@ -94,6 +98,11 @@ network = resnet_LBC.cifar10_resnet_vanilla_generator(depth = opt.depth,
         number_of_b = opt.number_of_b, sparsity = opt.sparsity,
         shared_weights = opt.shared_weights)
 
+# def LBC_resnet(inputs, is_training, opt):
+#     def basic_res_block(inputs, nChIn, nChTmp, kSize, is_training, data_format, 
+#             sparsity, shared_weights, block_name):
+#         output = tf.layers.batch_normalization(inputs = inputs, 
+
 # construct the graph
 images = tf.placeholder(tf.float32, shape = [None, _image_height, _image_width, _channels])
 labels = tf.placeholder(tf.float32, shape = [None])
@@ -107,25 +116,29 @@ is_training = tf.placeholder(tf.bool, shape = [], name = 'training_flag')
 logits = network(images, is_training = is_training)
 cross_entropy = tf.losses.softmax_cross_entropy(one_hot_labels, logits)
 
-# loss = cross_entropy + _WEIGHT_DECAY * tf.add_n(
-#    [tf.nn.l2_loss(v) for v in tf.trainable_variables()])
+loss = cross_entropy + _WEIGHT_DECAY * tf.add_n(
+   [tf.nn.l2_loss(v) for v in tf.trainable_variables()])
 loss = cross_entropy
 
 optimizer = tf.train.MomentumOptimizer(learning_rate = learning_rate, momentum = _momentum)
-train_op = optimizer.minimize(loss)
+update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+with tf.control_dependencies(update_ops):
+    train_op = optimizer.minimize(loss)
+
 correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(one_hot_labels, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 with tf.Session() as sess:
     init = tf.global_variables_initializer()
     sess.run(init)
+    total_step = opt.nEpochs * _train_dataset_size // opt.batch_size
     for epoch in range(opt.nEpochs):
         # shuffle the data set
         train_data, train_label = shuffleDataSet(train_data, train_label)
         for iter in range(_train_dataset_size // opt.batch_size):
             # decrease the learning rate in a naive way.
             step = epoch * (_train_dataset_size//opt.batch_size) + iter
-            if step in [5e3, 1e4, 5e4, 1e5]:
+            if step in [total_step//4, totol_step//2, totol_step * 3//4, total_step * 7 // 8]:
                 training_rate *= 0.1
             # sample batchs from training data.
             images_batch = train_data[iter : iter + opt.batch_size]
@@ -148,10 +161,10 @@ with tf.Session() as sess:
                     step, train_loss_w_bn, train_xentro_w_bn, train_acc_w_bn))
                 print('step {}, without batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
                     step, train_loss_wo_bn, train_loss_wo_bn, train_acc_wo_bn))
-                val_loss, val_xe, val_acc = sess.run([loss, cross_entropy, accuracy],
-                        feed_dict = feed_dict_1)
-                print('validatation, step = {}, loss = {}, xe = {}, acc = {}'.format(
-                        step, val_loss, val_xe, val_acc))
+                # val_loss, val_xe, val_acc = sess.run([loss, cross_entropy, accuracy],
+                #         feed_dict = feed_dict_1)
+                # print('validatation, step = {}, loss = {}, xe = {}, acc = {}'.format(
+                #         step, val_loss, val_xe, val_acc))
                 print('----')
         # do evaluation every epoch.
         eval_loss = 0
