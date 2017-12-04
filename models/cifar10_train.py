@@ -204,7 +204,7 @@ parser.add_argument('--data_dir', type = str,
 parser.add_argument('--depth', type = int, default = 15,
                     help='The depth of resnet')
 
-parser.add_argument('--result_dir', type = str,
+parser.add_argument('--result_dir', type = str, default = '/tmp/results/',
                     help='the directory to save the training result')
 
 FLAGS, unparsed = parser.parse_known_args()
@@ -214,7 +214,7 @@ opt.depth = FLAGS.depth
 
 path2Data = FLAGS.data_dir
 
-output_result_file = open('{}resnet_LBC_result_output_file'.format(FLAGS.result_dir), 'w')
+# output_result_file = open('{}resnet_LBC_result_output_file'.format(FLAGS.result_dir), 'w')
 
 _image_width = 32
 _image_height = 32
@@ -238,8 +238,9 @@ def shuffleDataSet(images, labels):
     p = np.random.permutation(len(images))
     return images[p], labels[p]
 
-output_result_file.write('extracting data from: {}cifar-10-batches-py/'.format(path2Data))
-output_result_file.write('\n')
+print('extracting data from: {}cifar-10-batches-py/'.format(path2Data))
+# output_result_file.write('extracting data from: {}cifar-10-batches-py/'.format(path2Data))
+# output_result_file.write('\n')
 # unpacking training and test data
 b1 = unpickle(path2Data + 'cifar-10-batches-py/data_batch_1')
 b2 = unpickle(path2Data + 'cifar-10-batches-py/data_batch_2')
@@ -291,8 +292,10 @@ test_data = test_data.transpose([0, 3, 2, 1])
 #         units_in_FC = opt.full, data_format = opt.data_format,
 #         number_of_b = opt.number_of_b, sparsity = opt.sparsity,
 #         shared_weights = opt.shared_weights)
-output_result_file.write('depth of resnet = {}'.format(opt.depth))
-output_result_file.write('\n')
+
+# output_result_file.write('depth of resnet = {}'.format(opt.depth))
+# output_result_file.write('\n')
+print('depth of resnet = {}'.format(opt.depth))
 network = cifar10_resnet_LBC_generator(depth = opt.depth,
         nClass = opt.nClass, kSize = opt.convSize, numChannels = opt.numChannels,
         units_in_FC = opt.full, data_format = opt.data_format,
@@ -358,23 +361,21 @@ with tf.Session() as sess:
             train_loss_wo_bn, train_xentro_wo_bn, train_acc_wo_bn = sess.run(
                     [loss, cross_entropy, accuracy], feed_dict = feed_dict_2)
             if iter%50 == 0:
-                output_result_file.write('learning_rate = {}'.format(training_rate))
-                output_result_file.write('\n')
+                print('learning_rate = {}'.format(training_rate))
+                # output_result_file.write('learning_rate = {}'.format(training_rate))
+                # output_result_file.write('\n')
 
-                output_result_file.write('step {}, with batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
+                print('step {}, with batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
                     step, train_loss_w_bn, train_xentro_w_bn, train_acc_w_bn))
-                output_result_file.write('\n')
 
-                output_result_file.write('step {}, without batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
+                print('step {}, without batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
                     step, train_loss_wo_bn, train_xentro_wo_bn, train_acc_wo_bn))
-                output_result_file.write('\n')
 
                 # val_loss, val_xe, val_acc = sess.run([loss, cross_entropy, accuracy],
                 #         feed_dict = feed_dict_1)
-                # output_result_file.write('validatation, step = {}, loss = {}, xe = {}, acc = {}'.format(
+                # print('validatation, step = {}, loss = {}, xe = {}, acc = {}'.format(
                 #         step, val_loss, val_xe, val_acc))
-                output_result_file.write('----')
-                output_result_file.write('\n')
+                print('----')
         # do evaluation every epoch.
         eval_loss = 0
         eval_acc = 0
@@ -389,8 +390,7 @@ with tf.Session() as sess:
             eval_acc += test_batch_acc
         eval_loss = eval_loss/(_test_dataset_size//opt.batch_size)
         eval_acc = eval_acc/(_test_dataset_size//opt.batch_size)
-        output_result_file.write('epoch# {}, evaluation loss = {}, accuracy = {}'.format(
+        print('epoch# {}, evaluation loss = {}, accuracy = {}'.format(
             epoch, eval_loss, eval_acc))
-        output_result_file.write('\n')
 
-output_result_file.close()
+# output_result_file.close()
