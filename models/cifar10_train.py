@@ -167,7 +167,7 @@ with tf.Session() as sess:
                 print('step {}, with batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
                     step, train_loss_w_bn, train_xentro_w_bn, train_acc_w_bn))
                 print('step {}, without batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
-                    step, train_loss_wo_bn, train_loss_wo_bn, train_acc_wo_bn))
+                    step, train_loss_wo_bn, train_xentro_wo_bn, train_acc_wo_bn))
                 # val_loss, val_xe, val_acc = sess.run([loss, cross_entropy, accuracy],
                 #         feed_dict = feed_dict_1)
                 # print('validatation, step = {}, loss = {}, xe = {}, acc = {}'.format(

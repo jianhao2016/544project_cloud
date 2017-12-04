@@ -19,7 +19,7 @@ class TEMP_opt:
         self.number_of_b = 512 # number of binary filters in LBC, i.e. nChTmp
         self.full = 512 # number of hidden units in FC
         self.convSize = 3 # LB convolutional filter size
-        self.depth = 5 # number of blocks
+        self.depth = 20 # number of blocks
         self.weightDecay = 1e-4
         self.LR = 1e-4 #initial learning rate
         self.nEpochs = 100 # number of total epochs to run
