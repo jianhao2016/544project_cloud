@@ -20,9 +20,22 @@ import tensorflow as tf
 import resnet_LBC
 # from resnet_LBC import random_binary_convlution
 import base64
+import argparse
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument('--data_dir', type = str,
+                    help='The directory to the stored cifar10 data python format')
+
+parser.add_argument('--depth', type = int, default = 15,
+                    help='The depth of resnet')
+
+FLAGS, unparsed = parser.parse_known_args()
 
 opt = TEMP_opt()
-# opt.depth = 20
+opt.depth = FLAGS.depth
+
+path2Data = FLAGS.data_dir
 
 _image_width = 32
 _image_height = 32
@@ -45,15 +58,16 @@ def shuffleDataSet(images, labels):
     assert len(images) == len(labels)
     p = np.random.permutation(len(images))
     return images[p], labels[p]
-    
-# unpacking training and test data
-b1 = unpickle('../data/cifar-10-batches-py/data_batch_1')
-b2 = unpickle('../data/cifar-10-batches-py/data_batch_2')
-b3 = unpickle('../data/cifar-10-batches-py/data_batch_3')
-b4 = unpickle('../data/cifar-10-batches-py/data_batch_4')
-b5 = unpickle('../data/cifar-10-batches-py/data_batch_5')
 
-test = unpickle('../data/cifar-10-batches-py/test_batch')
+print('extracting data from: {}cifar-10-batches-py/'.format(path2Data))
+# unpacking training and test data
+b1 = unpickle(path2Data + 'cifar-10-batches-py/data_batch_1')
+b2 = unpickle(path2Data + 'cifar-10-batches-py/data_batch_2')
+b3 = unpickle(path2Data + 'cifar-10-batches-py/data_batch_3')
+b4 = unpickle(path2Data + 'cifar-10-batches-py/data_batch_4')
+b5 = unpickle(path2Data + 'cifar-10-batches-py/data_batch_5')
+
+test = unpickle(path2Data + 'cifar-10-batches-py/test_batch')
 for key, _ in test.items():
     print(repr(key), type(key))
 for key, _ in b1.items():
@@ -97,7 +111,7 @@ test_data = test_data.transpose([0, 3, 2, 1])
 #         units_in_FC = opt.full, data_format = opt.data_format,
 #         number_of_b = opt.number_of_b, sparsity = opt.sparsity,
 #         shared_weights = opt.shared_weights)
-
+print('depth of resnet = {}'.format(opt.depth))
 network = resnet_LBC.cifar10_resnet_LBC_generator(depth = opt.depth,
         nClass = opt.nClass, kSize = opt.convSize, numChannels = opt.numChannels,
         units_in_FC = opt.full, data_format = opt.data_format,
