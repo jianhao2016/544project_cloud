@@ -124,7 +124,7 @@ cross_entropy = tf.losses.softmax_cross_entropy(one_hot_labels, logits)
 
 loss = cross_entropy + _WEIGHT_DECAY * tf.add_n(
    [tf.nn.l2_loss(v) for v in tf.trainable_variables()])
-loss = cross_entropy
+#loss = cross_entropy
 
 optimizer = tf.train.MomentumOptimizer(learning_rate = learning_rate, momentum = _momentum)
 update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -163,6 +163,7 @@ with tf.Session() as sess:
             train_loss_wo_bn, train_xentro_wo_bn, train_acc_wo_bn = sess.run(
                     [loss, cross_entropy, accuracy], feed_dict = feed_dict_2)
             if iter%50 == 0:
+                print('learning_rate', training_rate)
                 print('step {}, with batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
                     step, train_loss_w_bn, train_xentro_w_bn, train_acc_w_bn))
                 print('step {}, without batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
