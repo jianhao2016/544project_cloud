@@ -22,7 +22,7 @@ class TEMP_opt:
         self.depth = 5 # number of blocks
         self.weightDecay = 1e-4
         self.LR = 1e-4 #initial learning rate
-        self.nEpochs = 3 # number of total epochs to run
+        self.nEpochs = 100 # number of total epochs to run
         # self.epochNumber = 1 # manual epoch number
         self.batch_size = 20
         self.data_format = None
