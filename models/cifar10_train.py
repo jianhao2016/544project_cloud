@@ -92,7 +92,13 @@ train_data = train_data.transpose([0, 3, 2, 1])
 test_data = test_data.transpose([0, 3, 2, 1])
 
 
-network = resnet_LBC.cifar10_resnet_vanilla_generator(depth = opt.depth,
+# network = resnet_LBC.cifar10_resnet_vanilla_generator(depth = opt.depth,
+#         nClass = opt.nClass, kSize = opt.convSize, numChannels = opt.numChannels,
+#         units_in_FC = opt.full, data_format = opt.data_format,
+#         number_of_b = opt.number_of_b, sparsity = opt.sparsity,
+#         shared_weights = opt.shared_weights)
+
+network = resnet_LBC.cifar10_resnet_LBC_generator(depth = opt.depth,
         nClass = opt.nClass, kSize = opt.convSize, numChannels = opt.numChannels,
         units_in_FC = opt.full, data_format = opt.data_format,
         number_of_b = opt.number_of_b, sparsity = opt.sparsity,
@@ -138,7 +144,7 @@ with tf.Session() as sess:
         for iter in range(_train_dataset_size // opt.batch_size):
             # decrease the learning rate in a naive way.
             step = epoch * (_train_dataset_size//opt.batch_size) + iter
-            if step in [total_step//4, totol_step//2, totol_step * 3//4, total_step * 7 // 8]:
+            if step in [total_step//4, total_step//2, total_step * 3//4, total_step * 7 // 8]:
                 training_rate *= 0.1
             # sample batchs from training data.
             images_batch = train_data[iter : iter + opt.batch_size]
