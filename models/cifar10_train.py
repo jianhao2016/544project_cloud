@@ -79,9 +79,13 @@ train_label = np.concatenate([b1[b'labels'],b2[b'labels'],b3[b'labels'],b4[b'lab
 #     print('data_format error. check opt file')
 #     exit(1)
 train_data = np.reshape(train_data, newshape = 
-    [_train_dataset_size, _image_height, _image_width, _channels])
+    [-1, _channels, _image_height, _image_width])
 test_data = np.reshape(test_data, newshape = 
-    [_test_dataset_size, _image_height, _image_width, _channels])
+    [-1, _channels, _image_height, _image_width])
+train_data = np.array(train_data, dtype=float) / 255.0
+test_data = np.array(test_data, dtype=float) /255.0
+train_data = train_data.transpose([0, 3, 2, 1])
+test_data = test_data.transpose([0, 3, 2, 1])
 
 
 network = resnet_LBC.cifar10_resnet_vanilla_generator(depth = opt.depth,
