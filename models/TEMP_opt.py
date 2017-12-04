@@ -24,7 +24,7 @@ class TEMP_opt:
         self.LR = 1e-4 #initial learning rate
         self.nEpochs = 100 # number of total epochs to run
         # self.epochNumber = 1 # manual epoch number
-        self.batch_size = 20
+        self.batch_size = 128
         self.data_format = None
         self.shared_weights = False
 
