@@ -13,7 +13,26 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from TEMP_opt import TEMP_opt
+
+class TEMP_opt:
+    def __init__(self):
+        self.nClass = 10
+        self.stride = 1
+        self.sparsity = 0.9
+        self.nInputPlane = 3
+        self.numChannels = 128 # number of intermediate layers between blocks, i.e. nChIn
+        self.number_of_b = 512 # number of binary filters in LBC, i.e. nChTmp
+        self.full = 512 # number of hidden units in FC
+        self.convSize = 3 # LB convolutional filter size
+        self.depth = 20 # number of blocks
+        self.weightDecay = 1e-4
+        self.LR = 1e-4 #initial learning rate
+        self.nEpochs = 100 # number of total epochs to run
+        # self.epochNumber = 1 # manual epoch number
+        self.batch_size = 128
+        self.data_format = None
+        self.shared_weights = False
+
 
 import numpy as np
 import tensorflow as tf
@@ -30,12 +49,17 @@ parser.add_argument('--data_dir', type = str,
 parser.add_argument('--depth', type = int, default = 15,
                     help='The depth of resnet')
 
+parser.add_argument('--result_dir', type = str,
+                    help='the directory to save the training result')
+
 FLAGS, unparsed = parser.parse_known_args()
 
 opt = TEMP_opt()
 opt.depth = FLAGS.depth
 
 path2Data = FLAGS.data_dir
+
+output_result_file = open('{}resnet_LBC_result_output_file'.format(FLAGS.result_dir), 'w')
 
 _image_width = 32
 _image_height = 32
@@ -59,7 +83,8 @@ def shuffleDataSet(images, labels):
     p = np.random.permutation(len(images))
     return images[p], labels[p]
 
-print('extracting data from: {}cifar-10-batches-py/'.format(path2Data))
+output_result_file.write('extracting data from: {}cifar-10-batches-py/'.format(path2Data))
+output_result_file.write('\n')
 # unpacking training and test data
 b1 = unpickle(path2Data + 'cifar-10-batches-py/data_batch_1')
 b2 = unpickle(path2Data + 'cifar-10-batches-py/data_batch_2')
@@ -111,7 +136,8 @@ test_data = test_data.transpose([0, 3, 2, 1])
 #         units_in_FC = opt.full, data_format = opt.data_format,
 #         number_of_b = opt.number_of_b, sparsity = opt.sparsity,
 #         shared_weights = opt.shared_weights)
-print('depth of resnet = {}'.format(opt.depth))
+output_result_file.write('depth of resnet = {}'.format(opt.depth))
+output_result_file.write('\n')
 network = resnet_LBC.cifar10_resnet_LBC_generator(depth = opt.depth,
         nClass = opt.nClass, kSize = opt.convSize, numChannels = opt.numChannels,
         units_in_FC = opt.full, data_format = opt.data_format,
@@ -177,16 +203,23 @@ with tf.Session() as sess:
             train_loss_wo_bn, train_xentro_wo_bn, train_acc_wo_bn = sess.run(
                     [loss, cross_entropy, accuracy], feed_dict = feed_dict_2)
             if iter%50 == 0:
-                print('learning_rate', training_rate)
-                print('step {}, with batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
+                output_result_file.write('learning_rate = {}'.format(training_rate))
+                output_result_file.write('\n')
+
+                output_result_file.write('step {}, with batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
                     step, train_loss_w_bn, train_xentro_w_bn, train_acc_w_bn))
-                print('step {}, without batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
+                output_result_file.write('\n')
+
+                output_result_file.write('step {}, without batch norm training loss = {}, cross_entropy = {}, training accuracy = {}'.format(
                     step, train_loss_wo_bn, train_xentro_wo_bn, train_acc_wo_bn))
+                output_result_file.write('\n')
+
                 # val_loss, val_xe, val_acc = sess.run([loss, cross_entropy, accuracy],
                 #         feed_dict = feed_dict_1)
-                # print('validatation, step = {}, loss = {}, xe = {}, acc = {}'.format(
+                # output_result_file.write('validatation, step = {}, loss = {}, xe = {}, acc = {}'.format(
                 #         step, val_loss, val_xe, val_acc))
-                print('----')
+                output_result_file.write('----')
+                output_result_file.write('\n')
         # do evaluation every epoch.
         eval_loss = 0
         eval_acc = 0
@@ -201,6 +234,8 @@ with tf.Session() as sess:
             eval_acc += test_batch_acc
         eval_loss = eval_loss/(_test_dataset_size//opt.batch_size)
         eval_acc = eval_acc/(_test_dataset_size//opt.batch_size)
-        print('epoch# {}, evaluation loss = {}, accuracy = {}'.format(
+        output_result_file.write('epoch# {}, evaluation loss = {}, accuracy = {}'.format(
             epoch, eval_loss, eval_acc))
+        output_result_file.write('\n')
 
+output_result_file.close()
